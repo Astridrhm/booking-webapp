@@ -281,7 +281,6 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
     } else {
       setValue("endTime", "");
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedStartTime]);
 
   const onSubmit = async (values: CreateBookingData | UpdateBookingData) => {

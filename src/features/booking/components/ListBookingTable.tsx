@@ -100,7 +100,6 @@ export default function ListBookingTable({ filter, page, onTotalPagesChange }: P
     }, 300)
 
     return () => clearTimeout(timer)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, page, user])
 
   const isToday = (dateStr: string) => {

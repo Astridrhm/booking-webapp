@@ -10,7 +10,6 @@ import User from "@/features/users/pages/UserForm"
 import { getUserById } from "@/features/users/services/userServices"
 import { UserRes } from "@/features/users/types/user"
 import useGoBack from "@/hooks/useGoBack"
-import { useRouter } from "next/navigation"
 
 import { use, useEffect, useState } from "react"
 
@@ -20,7 +19,6 @@ export default function Page({
   params: Promise<{ id: string }>
 }) {
   const { id } = use(params)
-  const router = useRouter()
   
   const { showAlert } = useAlert()
   const { user } = useAuth()
@@ -54,7 +52,6 @@ export default function Page({
       }
       handleGetUser()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, user])
 
   return (

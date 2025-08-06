@@ -61,7 +61,6 @@ export default function Page({
       }
       handleGetRoom()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, notHasCreatedRoom, notHasUpdatedRoom])
 
   return (

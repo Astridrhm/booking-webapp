@@ -128,7 +128,6 @@ export default function ListDepartmentTable({ filter, page, addRow, onTotalPages
     }, 300)
 
     return () => clearTimeout(timer)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, page])
 
   return (

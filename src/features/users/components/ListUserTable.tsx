@@ -92,7 +92,6 @@ export default function ListUserTable({filter, page, onTotalPagesChange}: Props)
       handleUserData()
     }, 300)
     return () => clearTimeout(timer)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter])
 
   return (

@@ -32,6 +32,7 @@ export default function ListRoomTable({ filter, page, onTotalPagesChange }: Prop
 
   const [ roomData, setRoomData ] = useState<Room[]>([])
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleFetchDataRoom = async (data: FilterData, page: number) => {
     setLoading(true)
     try {
@@ -64,7 +65,6 @@ export default function ListRoomTable({ filter, page, onTotalPagesChange }: Prop
     }, 300)
 
     return () => clearTimeout(timer)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filter, page])
 
   return (

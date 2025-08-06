@@ -148,7 +148,6 @@ const Calendar: React.FC<CalendarProps> = ({ filter }) => {
         message: `Failed to fetch events:` + err,
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchedKeys, filter]);
 
   const handleDateSelect = (selectInfo: DateSelectArg) => {
@@ -210,7 +209,6 @@ const Calendar: React.FC<CalendarProps> = ({ filter }) => {
         timeZone: "local",
       });
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleDatesSet, filter]);
 
 
@@ -262,7 +260,7 @@ const renderEventContent = (eventInfo: EventContentArg) => {
   const endDate = eventInfo.event.end;
 
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // <-- reset jam ke 00:00:00.000
+  today.setHours(0, 0, 0, 0);
 
   const isPast = endDate! < today;
 

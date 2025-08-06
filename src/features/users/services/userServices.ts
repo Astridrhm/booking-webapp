@@ -52,8 +52,12 @@ export const activateUser = async (userId: string) => {
 
 export const deactiveUser = async (userId: string) => {
   try {
-    const res = await api.delete("/api/users", {data: {userId}})
-    const respone = res.data as ResponseApi
+    const res = await api.request({
+      url: "/api/users",
+      method: "DELETE",
+      data: { userId }
+    })
+    const respone = res.data as unknown as ResponseApi
     return respone
   
   } catch (error: any) {

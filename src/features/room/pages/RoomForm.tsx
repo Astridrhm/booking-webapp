@@ -78,7 +78,6 @@ export default function Room({roomId, room, mode}: props) {
   
   useEffect(() => {
     fetchOptions(getLocation, setLocationDropdownOption, "location")
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
 
