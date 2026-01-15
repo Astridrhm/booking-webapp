@@ -13,7 +13,7 @@ import { SquarePen, Trash} from "lucide-react"
 import { Booking, BookingStatus, FilterData } from "../types/booking"
 import { useAlert } from "@/context/AlertContext"
 import { approvalBooking, listBooking } from "../services/bookingService"
-import { formatDateForQuery, FormatTime } from "@/utils/time"
+import { formatDateForQuery, formatTime } from "@/utils/time"
 import Badge from "@/components/ui/badge/Badge"
 import { usePrivilege } from "@/hooks/usePrivileges"
 import Link from "next/link"
@@ -47,7 +47,7 @@ export default function ListBookingTable({ filter, page, onTotalPagesChange }: P
         limit: 10, 
         filter: {
           userid: bookingUserId,
-          roomId: data.room,
+          roomId: data.room.value,
           startDate: data.startDate && formatDateForQuery(data.startDate),
           endDate: data.endDate && formatDateForQuery(data.endDate),
           status: data.status
@@ -152,7 +152,7 @@ export default function ListBookingTable({ filter, page, onTotalPagesChange }: P
                         <TableCell className="px-5 py-4 text-start">
                           <div>
                             <span className="block font-medium text-gray-800 text-theme-sm dark:text-white/90">
-                              {FormatTime(new Date(data.startDate))} - {FormatTime(new Date(data.endDate))}
+                              {formatTime(new Date(data.startDate))} - {formatTime(new Date(data.endDate))}
                             </span>
                             <span className="block text-gray-500 text-theme-xs dark:text-gray-400">
                               {formatDateForQuery(new Date(data.startDate))}
@@ -237,7 +237,7 @@ export default function ListBookingTable({ filter, page, onTotalPagesChange }: P
                                     </div>               
                                   )}
                                 </>
-                              );
+                              )
                             })()
                           )}
                         </TableCell>

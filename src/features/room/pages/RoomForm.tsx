@@ -93,7 +93,6 @@ export default function Room({roomId, room, mode}: props) {
   }, [reset, room, roomId])
   
   const onSubmit = async (values: CreateRoomData | UpdateRoomData) => {
-    console.log(values)
     let sendData: RoomReq
     try {
       if(isUpdate) {

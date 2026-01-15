@@ -1,5 +1,5 @@
 import api from '@/lib/api'
-import { Booking, CreateBookingRequest } from '../types/booking'
+import { Booking, BookingCalendar, BookingRequest } from '../types/booking'
 import { FilterQuery, Pagination, ResponseApi } from '@/lib/api.type'
 
 export const listBooking = async ({page, limit, orderDir, orderBy, filter = {}}: FilterQuery): Promise<Pagination<Booking[]>> => {
@@ -25,7 +25,30 @@ export const listBooking = async ({page, limit, orderDir, orderBy, filter = {}}:
   }
 }
 
-export const createBooking = async (data: CreateBookingRequest) => {
+export const listCalendarBooking = async (data: {roomId: string, startDate: string, endDate: string}): Promise<BookingCalendar[]> => {
+  try {
+    const res = await api.request({
+      url: "/api/bookings_calendar",
+      method: "POST",
+      data: { 
+        roomId: data.roomId,
+        startDate: data.startDate,
+        endDate: data.endDate
+      }
+    })
+
+    const response = res.data as unknown as ResponseApi<BookingCalendar[]>
+    const booking = response.data
+    
+    return booking
+  
+  } catch (error: any) {
+    console.error("Failed to fetch booking list:", error)
+    throw new Error(error?.message || "Unknown error occurred while fetching booking list")
+  }
+}
+
+export const createBooking = async (data: BookingRequest) => {
   try {  
     const res = await api.post("/api/bookings", data)
     console.log("Data", res)
@@ -61,7 +84,7 @@ export const getBooking = async (bookingId: string): Promise<Booking> => {
   }
 }
 
-export const updateBooking = async (data: CreateBookingRequest) => {
+export const updateBooking = async (data: BookingRequest) => {
   try {  
     const res = await api.patch("/api/bookings", data)
     console.log("Data", res)

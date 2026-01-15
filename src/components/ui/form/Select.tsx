@@ -18,7 +18,7 @@ type SelectOption = FlatOption | GroupedOption;
 interface SelectProps {
   options: SelectOption[];
   placeholder?: string;
-  onChange: (value: string) => void;
+  onChange: (value: any) => void;
   className?: string;
   defaultValue?: string;
   disabled?: boolean;
@@ -72,7 +72,7 @@ const customStyles = {
 
 const Select: React.FC<SelectProps> = ({
   options,
-  placeholder = "Pilih opsi",
+  placeholder = "Select Option",
   onChange,
   className = "",
   defaultValue = "",
@@ -84,7 +84,6 @@ const Select: React.FC<SelectProps> = ({
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // Menunggu hingga client-side
     setIsClient(true);
   }, []);
 
@@ -111,7 +110,7 @@ const Select: React.FC<SelectProps> = ({
       value={selected ?? null}
       onChange={(option) => {
         if (!option) return;
-        onChange((option as FlatOption).value);
+        onChange(isGrouped ? option as FlatOption : (option as FlatOption).value)
       }}
       styles={customStyles}
       isSearchable={true}

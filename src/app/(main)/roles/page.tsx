@@ -73,7 +73,6 @@ export default function Page() {
 
         updated[roleIndex] = { ...role };
       } else {
-        // ✅ Jika "*", mungkin kamu bisa skip atau beri warning
         console.warn("Cannot modify privileges because role has full access (*)");
       }
       return updated;
@@ -111,8 +110,7 @@ export default function Page() {
 
   const handleRoleOptions = async () => {
     try {
-      const res = await getRole() 
-      console.log("ini response nya", res)
+      const res = await getRole()
       const list = res.map((role) => ({
         ...role,
         privileges: parseData(role.privileges),

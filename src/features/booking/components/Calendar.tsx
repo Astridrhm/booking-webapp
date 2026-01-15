@@ -13,33 +13,42 @@ import {
 } from "@fullcalendar/core";
 import { useModal } from "@/hooks/useModal";
 import { useRouter } from "next/navigation";
-import { formatDateForQuery, FormatTime } from "@/utils/time";
-import { listBooking } from "../services/bookingService";
+import { formatDateForQuery, formatTime } from "@/utils/time";
+import { listBooking, listCalendarBooking } from "../services/bookingService";
 import { useAlert } from "@/context/AlertContext";
-import { Booking, BookingStatus } from "../types/booking";
+import { Booking, BookingCalendar, BookingStatus } from "../types/booking";
 import ModalBooking from "./ModalBooking";
 
 type CalendarProps = {
-  filter: string;
-};
+  filter: {
+    value: string,
+    label: string,
+    locId: string
+  }
+}
 
 const Calendar: React.FC<CalendarProps> = ({ filter }) => {
-  const router = useRouter();
-  const { showAlert } = useAlert();
-  const calendarRef = useRef<FullCalendar>(null);
+  const router = useRouter()
+  const { showAlert } = useAlert()
+  const calendarRef = useRef<FullCalendar>(null)
 
   const { isOpen, openModal, closeModal } = useModal();
 
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [selectedDate, setSelectedDate] = useState<EventInput[]>([]);
   const [allEvents, setAllEvents] = useState<EventInput[]>([]);
-
   const [fetchedKeys, setFetchedKeys] = useState<Set<string>>(new Set());
+  
   const [prevFilter, setPrevFilter] = useState<string | null>(null);
 
-  const handleGoToBooking = () => {
-    router.push("/booking/create");
-  };
+  const handleGoToBooking = (f?: any) => {
+    if (f) {
+      sessionStorage.setItem("temp_room", f.value)
+      sessionStorage.setItem("temp_locId", f.locId)
+      sessionStorage.setItem("temp_date", selectedDay as unknown as string)
+    }
+    router.push("/booking/create")
+  }
 
   const getWeekKey = (date: Date) => {
     const monday = new Date(date);
@@ -55,11 +64,15 @@ const Calendar: React.FC<CalendarProps> = ({ filter }) => {
     return `M-${keyDate.toISOString().slice(0, 10)}`;
   };
   
+  const getDayKey = (date: Date) => {
+    return `D-${date.toISOString().slice(0, 10)}`;
+  };
+  
   const handleDatesSet = useCallback(async (info: DatesSetArg) => {
-    if (!filter) return;
+    if (!filter.value) return
 
-    const viewType = info.view?.type ?? "";
-    let key = "";
+    const viewType = info.view?.type ?? ""
+    let key = ""
     let rangeStart = new Date(info.start);
     let rangeEnd = new Date(info.end);
 
@@ -87,86 +100,130 @@ const Calendar: React.FC<CalendarProps> = ({ filter }) => {
       rangeEnd = sunday;
     }
 
-    key = `${filter}-${key}`;
-
-    console.log("FINAL FETCH RANGE:", {
-      viewType,
-      key,
-      rangeStart: rangeStart.toISOString(),
-      rangeEnd: rangeEnd.toISOString(),
-    });
+    key = `${filter.value}-${key}`;
 
     if (fetchedKeys.has(key)) {
-      console.log("✅ Skip fetch (cached):", key);
-      return;
+      return
     }
 
     try {
-      console.log("ini data", formatDateForQuery(rangeStart))
-      const raw = await listBooking({ 
-        // orderDir: "",
-        // orderBy: "DESC",
-        filter: { 
-          roomId: filter, 
-          startDate: `${formatDateForQuery(rangeStart)} 00:00:00`,
-          endDate: `${formatDateForQuery(rangeEnd)} 23:59:00`,
-          status: BookingStatus.approved
-        }
+      const raw = await listCalendarBooking({
+        roomId: filter.value, 
+        startDate: `${formatDateForQuery(rangeStart)} 00:00:00`,
+        endDate: `${formatDateForQuery(rangeEnd)} 23:59:59`
       })
 
-      const data: EventInput[] = raw.list && raw.list.map((item: Booking) => ({
+      const data = raw && raw.flatMap((item: BookingCalendar) => ({
         id: item.id,
         title: item.title,
         start: new Date(item.startDate),
-        end: new Date(item.endDate),
-        extendedProps: {
-          category: item.category,
-          description: item.description,
-          roomName: item.room.name,
-          floor: item.room.floor,
-          capacity: item.room.capacity,
-          bookedBy: item.user.name,
-        }
-      })) || [];
+        end: new Date(item.endDate)
+      })) || []
 
       setAllEvents(prev => {
-        const merged = [...prev, ...data];
-        const map = new Map();
-        merged.forEach(event => map.set(event.id, event));
-        return Array.from(map.values());
-      });
+        const merged = [...prev, ...data]
+        const map = new Map()
+        merged.forEach(event => map.set(event.id, event))
+        return Array.from(map.values())
+      })
 
       setFetchedKeys(prev => {
-        const updated = new Set(prev);
-        updated.add(key);
-        return updated;
-      });
+        const updated = new Set(prev)
+        updated.add(key)
+        return updated
+      })
     } catch (err) {
       showAlert({
         variant: "error",
         title: "Gagal!",
         message: `Failed to fetch events:` + err,
-      });
+      })
     }
-  }, [fetchedKeys, filter]);
+  }, [fetchedKeys, filter, showAlert])
 
-  const handleDateSelect = (selectInfo: DateSelectArg) => {
-    const selectedStart = new Date(selectInfo.start ?? selectInfo.start);
-    selectedStart.setHours(0, 0, 0, 0);
+  const handleDateSelect = async (selectInfo: DateSelectArg) => {
+    if (!selectInfo) {
+      return
+    }
+    const selectedStart = new Date(selectInfo!.start)
+    selectedStart.setHours(0, 0, 0, 0)
 
-    const selectedEnd = new Date(selectedStart);
-    selectedEnd.setHours(23, 59, 59, 999);
+    const selectedEnd = new Date(selectedStart)
+    selectedEnd.setHours(23, 59, 59, 999)
 
-    const dataFilter = allEvents.filter((data) => {
-      const startDate = new Date(data.start as string | Date);
-      const endDate = new Date(data.end as string | Date);
-      return startDate <= selectedEnd && endDate >= selectedStart;
-    });
+    const key = `${filter.value}-${getDayKey(selectedStart)}`;
+    let dataFilter: any = []
+    if (!fetchedKeys.has(key)) {
+      try {
+        const raw = await listBooking({
+          limit: 100,
+          filter: {
+            roomId: filter.value, 
+            startDate: `${formatDateForQuery(selectInfo.start)} 00:00:00`,
+            endDate: `${formatDateForQuery(selectInfo.start)} 23:59:59`,
+            status: BookingStatus.approved
+          }
+        })
 
-    setSelectedDay(selectedStart);
-    setSelectedDate(dataFilter);
+        dataFilter = raw.list && raw.list.map((item: Booking) => ({
+          id: item.id,
+          title: item.title,
+          start: new Date(item.startDate),
+          end: new Date(item.endDate),
+          extendedProps: {
+            category: item.category,
+            description: item.description,
+            roomName: item.room.name,
+            floor: item.room.floor,
+            capacity: item.room.capacity,
+            bookedBy: item.user.name,
+          }
+        })) || []
+
+        setFetchedKeys(prev => {
+          const updated = new Set(prev)
+          updated.add(key)
+          return updated
+        })
+      } catch (err) {
+        showAlert({
+          variant: "error",
+          title: "Gagal!",
+          message: `Failed to fetch events:` + err,
+        })
+      }
+    }
+    setSelectedDay(selectedStart)
+    setSelectedDate(prev => {
+      const merged = [...prev, ...dataFilter]
+
+      const map = new Map<string, EventInput>()
+      merged.forEach((event: any) => {
+        map.set(event.id, event)
+      })
+
+      return Array.from(map.values())
+    })
     openModal()
-  };
+  }
+
+  const selectedDateForModal = React.useMemo(() => {
+    if (!selectedDay) return [];
+
+    const startDay = new Date(selectedDay);
+    startDay.setHours(0, 0, 0, 0);
+
+    const endDay = new Date(selectedDay);
+    endDay.setHours(23, 59, 59, 999);
+
+    return selectedDate.filter((event: any) => {
+      const start = new Date(event.start as string | Date);
+      const end = new Date(event.end as string | Date);
+
+      return start <= endDay && end >= startDay;
+    });
+  }, [selectedDay, selectedDate]);
+
 
   const handleMoreLinkClick = (data: MoreLinkArg) => {
     const pseudoSelectArg = {
@@ -175,10 +232,10 @@ const Calendar: React.FC<CalendarProps> = ({ filter }) => {
       allDay: data.allDay,
       jsEvent: data.jsEvent,
       view: data.view,
-    } as DateSelectArg;
+    } as DateSelectArg
 
-    handleDateSelect(pseudoSelectArg);
-  };
+    handleDateSelect(pseudoSelectArg)
+  }
 
   // const handleEventClick = (clickInfo: EventClickArg) => {
   //   console.log("TYPE", typeof clickInfo.event)
@@ -195,10 +252,10 @@ const Calendar: React.FC<CalendarProps> = ({ filter }) => {
     const calendarApi = calendarRef.current.getApi();
     const view = calendarApi.view;
 
-    if (filter !== prevFilter) {
-      setFetchedKeys(new Set());
-      setAllEvents([]);
-      setPrevFilter(filter);
+    if (filter.value !== prevFilter) {
+      setFetchedKeys(new Set())
+      setAllEvents([])
+      setPrevFilter(filter.value)
 
       handleDatesSet({
         start: view.activeStart,
@@ -207,10 +264,9 @@ const Calendar: React.FC<CalendarProps> = ({ filter }) => {
         startStr: view.activeStart.toISOString(),
         endStr: view.activeEnd.toISOString(),
         timeZone: "local",
-      });
+      })
     }
-  }, [handleDatesSet, filter]);
-
+  }, [handleDatesSet, filter])
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white">
@@ -232,14 +288,14 @@ const Calendar: React.FC<CalendarProps> = ({ filter }) => {
           eventContent={renderEventContent}
           dayMaxEvents={2}
           moreLinkClick={(arg) => {
-            arg.jsEvent.preventDefault();
-            handleMoreLinkClick(arg);
-            return "none";
+            arg.jsEvent.preventDefault()
+            handleMoreLinkClick(arg)
+            return "none"
           }}
           customButtons={{
             addEventButton: {
               text: "Booking Room",
-              click: handleGoToBooking,
+              click: () => handleGoToBooking(),
             },
           }}
         />
@@ -247,27 +303,28 @@ const Calendar: React.FC<CalendarProps> = ({ filter }) => {
       <ModalBooking
         isOpen={isOpen}
         closeModal={closeModal}
-        selectedDate={selectedDate}
+        selectedDate={selectedDateForModal}
         selectedDay={selectedDay}
-        handleGoToBooking={handleGoToBooking}
+        roomLabel={filter.label}
+        handleGoToBooking={() => handleGoToBooking(filter)}
       />
     </div>
   );
 };
 
 const renderEventContent = (eventInfo: EventContentArg) => {
-  const startDate = eventInfo.event.start;
-  const endDate = eventInfo.event.end;
+  const startDate = eventInfo.event.start
+  const endDate = eventInfo.event.end
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
 
-  const isPast = endDate! < today;
+  const isPast = endDate! < today
 
-  if (!startDate || !endDate) return null;
+  if (!startDate || !endDate) return null
 
-  const startTime = FormatTime(startDate);
-  const endTime = FormatTime(endDate);
+  const startTime = formatTime(startDate)
+  const endTime = formatTime(endDate)
   
   return (
     <div
@@ -282,4 +339,4 @@ const renderEventContent = (eventInfo: EventContentArg) => {
   );
 };
 
-export default Calendar;
+export default Calendar

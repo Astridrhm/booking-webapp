@@ -112,7 +112,7 @@ export default function SignInForm() {
                           placeholder="password"
                           {...field}
                         />
-                        <button
+                        <div
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute z-30 -translate-y-1/2 cursor-pointer right-4 top-1/2"
                         >
@@ -121,7 +121,7 @@ export default function SignInForm() {
                           ) : (
                             <EyeOff className="text-gray-300"/>
                           )}
-                        </button>
+                        </div>
                       </div>
                       <span className={`text-xs block min-h-[1rem] ${errors.password ? "text-red-400" : "invisible"}`}>
                         {errors.password?.message || "placeholder"}
@@ -133,7 +133,7 @@ export default function SignInForm() {
                
                 <div>
                   <div>
-                    <span className={`text-sm block min-h-[1rem] pb-2 ${failed ? "text-red-400" : "invisible"}`}>
+                    <span className={`text-xs block min-h-[1rem] pb-1 ${failed ? "text-red-400" : "invisible"}`}>
                       {failed || "placeholder"}
                     </span>
                   </div>

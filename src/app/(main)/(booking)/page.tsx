@@ -7,7 +7,7 @@ import { useState } from "react";
 
 export default function Page() {
   const [filter, setFilter] = useState<FilterData>({
-    room: '',
+    room: {value: '', label: '', locId: ''},
     startDate: undefined,
     endDate: undefined,
     status: ''

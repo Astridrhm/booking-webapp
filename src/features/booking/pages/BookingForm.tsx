@@ -1,7 +1,7 @@
 'use client'
 
 import { zodResolver } from "@hookform/resolvers/zod"
-import { Controller, useForm, useWatch  } from "react-hook-form"
+import { Controller, DeepPartial, useForm, useWatch  } from "react-hook-form"
 import z from "zod"
 import Label from "../../../components/ui/form/Label"
 import Input from "../../../components/ui/form/input/InputField"
@@ -10,16 +10,17 @@ import Button from "../../../components/ui/button/Button"
 import { useEffect, useRef, useState } from "react"
 import useGoBack from "@/hooks/useGoBack"
 import DatePicker from "../../../components/ui/form/date-picker"
-import { formatDateForQuery, FormatTime, getCurrentTimeSlot, getSelectedDate, SplitTime, TimeSlot } from "@/utils/time"
+import { formatDateForQuery, formatTime, getCurrenttimeSlot, getSelectedDate, splitTime, timeSlot } from "@/utils/time"
 import TextArea from "../../../components/ui/form/input/TextArea"
 import { useAlert } from "@/context/AlertContext"
 import { createBooking, listBooking, updateBooking } from "../services/bookingService"
-import { Booking, BookingStatus, CreateBookingRequest } from "../types/booking"
+import { Booking, BookingStatus, BookingRequest } from "../types/booking"
 import { useAuth } from "@/features/auth/context/AuthContext"
 import Switch from "@/components/ui/form/switch/Switch"
 import { getLocation, listRoom } from "@/features/room/services/roomService"
 import { Room } from "@/features/room/types/room"
 import { listCategories, listSubCategories } from "@/features/category/services/categoryService"
+import { useRouter } from "next/navigation"
 
 interface props {
   bookingId?: string
@@ -41,7 +42,6 @@ const createSchema = z.object({
   floor: z.string(),
   startDate: z.string().min(1, "Wajib diisi"),
   startTime: z.string("Wajib diisi"),
-  // endDate: z.string(),
   endTime: z.string("Wajib diisi")
 })
 
@@ -50,16 +50,16 @@ const updateSchema = createSchema.partial()
 type CreateBookingData = z.infer<typeof createSchema>
 type UpdateBookingData = z.infer<typeof updateSchema>
 
-
 export default function BookingForm({bookingId, bookingData, mode}: props) {
   const isUpdate = mode === 'update'
   
   const { showAlert } = useAlert()
   const { user } = useAuth()
-
   const goBack = useGoBack()
+  const router = useRouter()
 
   const initialized = useRef(false)
+
   const [categoryOptions, setCategoryOptions] = useState< Array<{ value: string; label: string }>>([])
   const [subCategoryOptions, setSubCategoryOptions] = useState<Array<{ value: string; label: string }>>([])
   const [locationDropdownOption, setLocationDropdownOption] = useState<Array<{ value: string; label: string }>>([])
@@ -77,14 +77,14 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
       category: bookingData?.category || "",
       subCategory: bookingData?.subCategoryId || "",
       pic: bookingData?.pic || "",
-      contactType: bookingData && /^\d+$/.test(bookingData.user.contact) ? "wa" : "email",
+      contactType: "",
       detailContactType: "",
-      location: bookingData?.room.locationId || "",
+      location: bookingData?.room && bookingData?.room.locationId || "",
       shortDescription: bookingData?.title || "",
       detailDescription: bookingData?.description || "",
       room: bookingData?.roomId || "",
-      capacity: bookingData?.room.capacity || "",
-      floor: bookingData?.room.floor || "",
+      capacity: bookingData?.room && bookingData?.room.capacity || "",
+      floor: bookingData?.room && bookingData?.room.floor || "",
       startDate: "",
       startTime: "",
       endTime: ""
@@ -97,24 +97,23 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
   const selectedCategory = useWatch({ control, name: 'category' })
   const selectedRoom = useWatch({ control, name: 'room' })
   const selectedLocation = useWatch({ control, name: 'location' })
+  const currentFormDetailContact = watch("detailContactType")
 
   useEffect(() => {
     if (!user || !selfBooking) return
 
     const currentValue = selectedContactType === 'email' ? user.user.email : user.user.contact
-    const currentFormValue = watch("detailContactType")
-
-    if (currentValue && currentFormValue !== currentValue) {
+    if (currentValue && currentFormDetailContact !== currentValue) {
       setValue("detailContactType", currentValue)
-    } else if (!currentValue && currentFormValue !== "") {
-      setValue("detailContactType", "")
+    } else if (!currentValue && currentFormDetailContact !== "") {
+      setValue("detailContactType", "") 
       showAlert({
         variant: "warning",
         title: `${selectedContactType} tidak tersedia`,
         message: "Silakan lengkapi profil Anda.",
       })
     }
-  }, [user, selectedContactType, selfBooking, setValue, showAlert, watch])
+  }, [user, selectedContactType, selfBooking, currentFormDetailContact, setValue, showAlert])
 
   useEffect(() => {
     if (initialized.current) return
@@ -137,6 +136,11 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
   }, [selectedCategory])
 
   useEffect(() => {
+    setValue("category", categoryOptions[0]?.value)
+    setValue("subCategory", subCategoryOptions[0]?.value)
+  }, [categoryOptions, subCategoryOptions])
+
+  useEffect(() => {
     if (!selectedLocation) return
     listRoom({ filter: { locationId: selectedLocation } }).then(res => {
       const rooms = res.list || []
@@ -152,24 +156,24 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
       setValue("capacity", r.capacity)
       setValue("floor", r.floor)
     }
-  }, [selectedRoom, roomRawList, setValue])
+  }, [selectedRoom, roomRawList])
 
   const disabledTimeOption = (time: string) => {
-    const startIndex = TimeSlot.indexOf(selectedStartTime!) 
-    const currentIndex = TimeSlot.indexOf(time) 
+    const startIndex = timeSlot.indexOf(selectedStartTime!) 
+    const currentIndex = timeSlot.indexOf(time) 
 
     if (currentIndex <= startIndex) return true
     if (bookedSlots.includes(time) && !startBookedDate.includes(time)) return true 
 
-    const timeRange = TimeSlot.slice(startIndex + 1, currentIndex + 1)
+    const timeRange = timeSlot.slice(startIndex + 1, currentIndex + 1)
     return timeRange.some(t => bookedSlots.includes(t) && !startBookedDate.includes(t))
   }
 
   const duration = (time: string): string => {
     if (!selectedStartTime) return "";
 
-    const start = SplitTime(selectedStartTime);
-    const end = SplitTime(time);
+    const start = splitTime(selectedStartTime);
+    const end = splitTime(time);
 
     if (end <= start) return "";
 
@@ -177,9 +181,9 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
 
-    if (hours && minutes) return `${hours} jam ${minutes} menit`;
-    if (hours) return `${hours} jam`;
-    if (minutes) return `${minutes} menit`;
+    if (hours && minutes) return `${hours} hours ${minutes} minutes`;
+    if (hours) return `${hours} hours`;
+    if (minutes) return `${minutes} minutes`;
 
     return "";
   }
@@ -206,85 +210,124 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
           if (isUpdate && booking.id === bookingId) {
             return []
           }
-          const start = TimeSlot.indexOf(FormatTime(new Date(booking.startDate)))
-          const end = TimeSlot.indexOf(FormatTime(new Date(booking.endDate)))
+          const start = timeSlot.indexOf(formatTime(new Date(booking.startDate)))
+          const end = timeSlot.indexOf(formatTime(new Date(booking.endDate)))
 
           if (start === -1 || end === -1) {
             return []
           }
-          return TimeSlot.slice(start, end)
+          return timeSlot.slice(start, end)
         }) || []
 
-        const startDateSlot = res.list && res.list.flatMap((booking) => FormatTime(new Date(booking.startDate))) || []
+        const startDateSlot = res.list && res.list.flatMap((booking) => formatTime(new Date(booking.startDate))) || []
       
         const today = new Date().toLocaleDateString('en-CA')
-        const currentTimeSlot = getCurrentTimeSlot()
+        const currenttimeSlot = getCurrenttimeSlot()
 
-        let disabledTimeSlot: string[] = []
+        let disabledtimeSlot: string[] = []
         if (selectedStartDate === today) {
-          disabledTimeSlot = TimeSlot.filter(time => time < currentTimeSlot)
+          disabledtimeSlot = timeSlot.filter(time => time < currenttimeSlot)
         }
 
-        const allDisabledSlots = [...booked, ...disabledTimeSlot]
+        const allDisabledSlots = [...booked, ...disabledtimeSlot]
 
         setBookedSlots(allDisabledSlots)
         setStartBookedDate(startDateSlot)
-      } catch (err) {
-        console.error(err)
+      } catch (err: any) {
+        showAlert({ variant: 'error', title: 'Gagal!', message: err.message })
       }
     }
     fetchBookingData()
   }, [bookingId, isUpdate, selectedRoom, selectedStartDate])
 
   useEffect(() => {
-    if (!bookingData) return
+    let draft: DeepPartial<Booking> = {}
+    let full: Booking | null = null
 
-    reset({
-      // category: bookingData.category ?? "",
-      // subCategory: subCategoryOptions.find((data) => data.value === bookingData.subCategory)?.value || "",
-      // pic: bookingData.pic ?? "",
-      contactType: bookingData.user.email ? "email" : "whatsapp",
-      // detailContactType: bookingData.user.email ?? "",
-      // location: bookingData.room?.locationId ?? "",
-      // shortDescription: bookingData.title ?? "",
-      // detailDescription: bookingData.description ?? "",
-      room: roomDropdownOption.find((data) => data.value === bookingData.roomId)?.value || "",
-      // capacity: bookingData.room?.capacity ?? "",
-      // floor: bookingData.room?.floor ?? "",
-      startDate:  "",
-      startTime: "", 
-      endTime: ""
-    })
+    if (isUpdate && bookingData) {
+      full = bookingData
+    } else {
+      if (
+        Object.keys(sessionStorage).some(value => value.includes("temp"))
+      ) {
+        draft = {
+          roomId: sessionStorage.getItem("temp_room")!,
+          startDate: sessionStorage.getItem("temp_date")!,
+          room: {
+            id: sessionStorage.getItem("temp_room")!,
+            locationId: sessionStorage.getItem("temp_locId")!,
+          },
+        }
+      }
+    }
 
-    const startDate = getSelectedDate(new Date(bookingData.startDate))
-    const startTime = FormatTime(new Date(bookingData.startDate))
-    const endTime = FormatTime(new Date(bookingData.endDate))
+    if (draft.roomId || full) {
+      reset({
+        contactType: full?.detailContact && /^\d+$/.test(full.detailContact) ? "whatsapp" : "email",
+        detailContactType: full?.detailContact || "",
+        room: roomDropdownOption.find(opt => opt.value === (full?.roomId || draft.roomId || ""))?.value || "",
+        startDate: "",
+        startTime: "",
+        endTime: "",
+      })
 
-    setValue("startDate", startDate)
-    setValue("startTime", startTime)
-    setValue("endTime", endTime)
-    setSelfBooking(bookingData.pic === "")
-  }, [bookingData, reset, roomDropdownOption, setValue, subCategoryOptions])
+      if (full?.startDate && full?.endDate) {
+        const startDate = getSelectedDate(new Date(full.startDate))
+        const startTime = formatTime(new Date(full.startDate))
+        const endTime = formatTime(new Date(full.endDate))
+
+        setValue("startDate", startDate)
+        setValue("startTime", startTime)
+        setValue("endTime", endTime)
+      }
+
+      if (draft.startDate) {
+        const startDate = getSelectedDate(new Date(draft.startDate))
+        const startTime = formatTime(new Date(draft.startDate))
+        setValue("startDate", startDate)
+        setValue("startTime", startTime)
+        setValue("location", draft.room?.locationId)
+      }
+
+      setSelfBooking(full?.pic === "" || draft.pic === "")
+    }
+  }, [bookingData, isUpdate, roomDropdownOption, reset, setValue])
 
   useEffect(() => {
-    const currentEndTime = getValues("endTime");
+    const currentEndTime = getValues("endTime")
 
     if (selectedStartTime && currentEndTime) {
-      console.log("Start time", selectedStartTime)
-      console.log("End Time", currentEndTime)
-      const start = SplitTime(selectedStartTime)
-      const end = SplitTime(currentEndTime)
+      const start = splitTime(selectedStartTime)
+      const end = splitTime(currentEndTime)
 
       if (end <= start) {
-        setValue("endTime", "");
+        setValue("endTime", "")
       }
     } else {
-      setValue("endTime", "");
+      setValue("endTime", "")
     }
-  }, [selectedStartTime]);
+  }, [selectedStartTime])
+
+  useEffect(() => {
+    const handleClick = () => {
+      const keys = Object.keys(sessionStorage)
+      for (let i = 0; i <= keys.length; i++) {
+        const key = keys[i]
+        if (key && key.includes('temp')) {
+          sessionStorage.removeItem(key)
+        }
+      }
+    }
+
+    document.addEventListener("click", handleClick)
+
+    return () => {
+      document.removeEventListener("click", handleClick)
+    }
+  }, [])
 
   const onSubmit = async (values: CreateBookingData | UpdateBookingData) => {
-    const payload: CreateBookingRequest = {
+    const payload: BookingRequest = {
       ...(isUpdate ? {
         bookingId: bookingId,
       } : {
@@ -297,7 +340,8 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
       description: values.detailDescription,
       startDate: `${values.startDate} ${values.startTime}:00`,
       endDate: `${values.startDate} ${values.endTime}:00`,
-      pic: values.pic?.trim() === "" ? null : values.pic
+      pic: values.pic?.trim() === "" ? null : `${values.pic}`,
+      detailContact: currentFormDetailContact
     }
 
     try {
@@ -307,7 +351,7 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
         await createBooking(payload)
       }
       showAlert({ variant: 'success', title: 'Berhasil!', message: 'Data berhasil disimpan!' })
-      if (!isUpdate) reset()
+      router.replace("/booking")
     } catch (err: any) {
       showAlert({ variant: 'error', title: 'Gagal!', message: err.message })
     }
@@ -330,7 +374,7 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
                   <Select
                     options={categoryOptions}
                     placeholder="Select Category"
-                    disabled={isUpdate}
+                    disabled={isUpdate || true}
                     {...field}
                   />
                 </div>
@@ -355,7 +399,7 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
                 <div className="relative">
                   <Select
                     options={subCategoryOptions}
-                    disabled={!selectedCategory}
+                    disabled={!selectedCategory || true}
                     placeholder="Select Sub Category"
                     {...field}
                   />
@@ -574,7 +618,7 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
             render={({field}) => (
               <>
                 <div>
-                  <Label>Start Date <span className="text-error-500">*</span></Label>
+                  <Label>Date<span className="text-error-500">*</span></Label>
                   <div className="flex flex-col lg:flex-row gap-3">
                     <DatePicker
                       key={field.value} 
@@ -597,13 +641,13 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
             name="startTime"
             render={({ field }) => (
               <Select
-                options={TimeSlot.map((time) => ({
+                options={timeSlot.map((time) => ({
                   value: time,
                   label: time,
                   disabled: bookedSlots.includes(time),
                 }))}
                 disabled={!selectedStartDate || !selectedRoom}
-                placeholder="Pilih waktu mulai"
+                placeholder="Start Time"
                 value={field.value}
                 onChange={(val) => field.onChange(val)}
               />
@@ -614,7 +658,7 @@ export default function BookingForm({bookingId, bookingData, mode}: props) {
             name="endTime"
             render={({ field }) => (
               <Select
-                options={TimeSlot.map((time) => ({
+                options={timeSlot.map((time) => ({
                   value: time,
                   label: handleLabelEndTime(time),
                   disabled: disabledTimeOption(time)

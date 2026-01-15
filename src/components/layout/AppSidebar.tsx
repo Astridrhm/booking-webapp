@@ -36,10 +36,9 @@ const navItems: NavItem[] = [
 const othersItems: NavItem[] = [
   {
     icon: <List />,
-    name: "Category",
-    path: "/category",
+    name: "Room",
     subItems: [
-      { name: "Room",
+      { name: "List",
         path: "/rooms",
         icon: <Warehouse />,
       },

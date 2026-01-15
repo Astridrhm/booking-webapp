@@ -1,28 +1,28 @@
-export const TimeSlot: string[] = (() => {
-  const slots: string[] = [];
+export const timeSlot: string[] = (() => {
+  const slots: string[] = []
   for (let hour = 0; hour < 24; hour++) {
     for (let minute = 0; minute < 60; minute += 15) {
-      const h = hour.toString().padStart(2, '0');
-      const m = minute.toString().padStart(2, '0');
-      slots.push(`${h}:${m}`);
+      const h = hour.toString().padStart(2, '0')
+      const m = minute.toString().padStart(2, '0')
+      slots.push(`${h}:${m}`)
     }
   }
-  return slots;
-})();
+  return slots
+})()
 
-export const SplitTime = (time: string): number => {
-  if (!time) return 0;
+export const splitTime = (time: string): number => {
+  if (!time) return 0
 
-  const [hourStr, minuteStr] = time.split(':');
-  const hour = parseInt(hourStr, 10);
-  const minute = parseInt(minuteStr, 10);
+  const [hourStr, minuteStr] = time.split(':')
+  const hour = parseInt(hourStr, 10)
+  const minute = parseInt(minuteStr, 10)
 
-  if (isNaN(hour) || isNaN(minute)) return 0;
+  if (isNaN(hour) || isNaN(minute)) return 0
 
-  return hour * 60 + minute;
-};
+  return hour * 60 + minute
+}
 
-export const FormatTime = (time: Date): string => {
+export const formatTime = (time: Date): string => {
   return new Date(time).toLocaleTimeString('id-ID', {
     hour: '2-digit',
     minute: '2-digit',
@@ -30,21 +30,29 @@ export const FormatTime = (time: Date): string => {
   }).replace('.', ':')
 }
 
-export const formatDateForQuery = (date: Date) => {
-  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return localDate.toISOString().split("T")[0];
-};
+export const formatDateForQuery = (date: Date, type?: ['date', 'datetime']) => {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+  const split = localDate.toISOString().split("T")
 
-export const getSelectedDate = (date: Date): string => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  const formatted = `${year}-${month}-${day}`;
-  return formatted;
+  if (!type) return `${split[0]}`
+  
+  if (type[0]) {
+    return `${split[0]}`
+  } else if(type[1]) {
+    return `${split[0]} ${split[1]}`
+  }
 }
 
-export const getCurrentTimeSlot = (): string => {
+export const getSelectedDate = (date: Date): string => {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+
+  const formatted = `${year}-${month}-${day}`
+  return formatted
+}
+
+export const getCurrenttimeSlot = (): string => {
   const now = new Date()
   const hour = now.getHours()
   const minutes = now.getMinutes()

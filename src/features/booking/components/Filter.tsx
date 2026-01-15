@@ -12,6 +12,7 @@ type GroupedOption = {
   options: {
     value: string
     label: string
+    locId: string
   }[]
 }
 
@@ -58,15 +59,16 @@ export default function Filter({ value, onChange, date, status }: FilterProps) {
 
         grouped[locId].options.push({
           value: room.id,
-          label: room.name
+          label: room.name,
+          locId: locId
         })
       })
 
       const groupList = Object.values(grouped)
       setRoomFilter(groupList)
 
-      if (!value.room && groupList.length > 0) {
-        const defaultRoomId = groupList[0].options[0].value
+      if (!value.room.value && groupList.length > 0) {
+        const defaultRoomId = groupList[0].options[0]
         const newFilter = { ...value, room: defaultRoomId }
         onChange(newFilter)
       }
@@ -100,8 +102,8 @@ export default function Filter({ value, onChange, date, status }: FilterProps) {
         <Select
           options={roomFilter}
           isGrouped
-          placeholder="Pilih ruangan"
-          value={value.room}
+          placeholder="Select Room"
+          value={value.room.value}
           onChange={(val) => updateFilter("room", val)}
           className="bg-white"
         />
@@ -111,7 +113,7 @@ export default function Filter({ value, onChange, date, status }: FilterProps) {
         <div className="relative z-10">
           <DatePicker
             id="range-date-picker"
-            placeholder="Pilih rentang tanggal"
+            placeholder="Select Date"
             mode="range"
             onChange={(selectedDates, _, instance) => {
               const [start, end] = selectedDates
@@ -126,7 +128,7 @@ export default function Filter({ value, onChange, date, status }: FilterProps) {
 
       {status && (
         <Select
-          placeholder="Pilih status"
+          placeholder="Select status"
           options={statusOptions}
           value={value.status === "" ? "all" : value.status}
           onChange={(val) => updateFilter("status", val === "all" ? "" : val)}

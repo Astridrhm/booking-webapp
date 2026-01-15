@@ -20,20 +20,35 @@ export interface Booking {
   userId: string;
   status: string;
   pic: string;
+  detailContact: string;
   subCategoryId: string;
   room: Room;
   user: UserRes;
 }
 
+export interface BookingCalendar{
+  id: string
+  startDate: string
+  endDate: string
+  title: string
+  roomId: string
+  // rowNumber: string
+  // totalCount: string
+}
+
 // request
 export type FilterData = {
-  room: string
+  room: {
+    value: string,
+    label: string,
+    locId: string
+  }
   startDate?: Date
   endDate?: Date
   status?: string
 }
 
-export interface CreateBookingRequest {
+export interface BookingRequest {
   bookingId?: string,
   roomId?: string,
   userId?: string,
@@ -43,6 +58,7 @@ export interface CreateBookingRequest {
   startDate?: string,
   endDate?: string,
   pic?: string | null,
+  detailContact?: string | null
   category?: string
   subCategoryId?: string
 }

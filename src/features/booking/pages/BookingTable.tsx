@@ -8,7 +8,7 @@ import { FilterData } from "../types/booking"
 
 export default function BookingTable() {
   const [filter, setFilter] = useState<FilterData>({
-    room: '',
+    room: {value: '', label: '', locId: ''},
     startDate: new Date(),
     endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     status: ''
@@ -21,10 +21,7 @@ export default function BookingTable() {
     <div>
       <Filter
         value={filter}
-        onChange={(newFilter) => {
-          setFilter(newFilter)
-          setCurrentPage(1)
-        }}
+        onChange={setFilter}
         date={true}
         status={true}
       />

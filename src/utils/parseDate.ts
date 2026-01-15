@@ -1,4 +1,4 @@
-import { Privilege } from "@/features/role/types/role";
+import { Privilege } from "@/features/role/types/role"
 
 export const parseData = (data: string): Privilege[] | "*" => {
   let parsed = JSON.parse(data)
@@ -21,9 +21,9 @@ export const parseData = (data: string): Privilege[] | "*" => {
         item.scopes.every((s: any) => typeof s === 'string')
     )
   ) {
-    return parsed as Privilege[];
+    return parsed as Privilege[]
   } else {
-    console.log("Parsed data tapi tidak valid");
-    return [];
+    console.log("Parsed data tapi tidak valid")
+    return []
   }
 }

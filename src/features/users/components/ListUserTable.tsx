@@ -18,6 +18,7 @@ import { FilterData, UserRes } from "../types/user";
 import { useLoading } from "@/context/LoadingContext";
 import Switch from "@/components/ui/form/switch/Switch";
 import { usePrivilege } from "@/hooks/usePrivileges";
+import { RoleID } from "@/features/role";
 interface Props {
   filter: FilterData
   page: number
@@ -59,9 +60,7 @@ export default function ListUserTable({filter, page, onTotalPagesChange}: Props)
     }
   }
 
-  const handleActivateStatus = async (checked: boolean, userId: string) => {
-    console.log("Switch is now:", checked ? "ON" : "OFF");
-    
+  const handleActivateStatus = async (checked: boolean, userId: string) => {    
     let statusUser: boolean
     try {
       if (checked) {
@@ -164,10 +163,10 @@ export default function ListUserTable({filter, page, onTotalPagesChange}: Props)
                     </Badge>
                   </TableCell>
                   {(hasDeactiveUser && hasActivateUser) && <TableCell className="px-4 py-3 text-gray-500 text-theme-sm">
-                    <Switch
+                    {user.role.id !== RoleID.superAdmin && <Switch
                       defaultChecked={user.isActive}
                       onChange={(checked) => handleActivateStatus(checked, user.id)}
-                    />
+                    />}
                   </TableCell>}
                   {hasUpdateUser && <TableCell className="px-4 py-3 text-gray-500 text-start text-theme-sm">
                     <Link

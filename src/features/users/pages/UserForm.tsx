@@ -24,7 +24,7 @@ interface props {
 const createSchema = z.object({
   email: z.email("Email tidak valid"),
   name: z.string("Wajib diisi").min(2, "Wajib diisi"),
-  contact: z.string("Wajib diisi").regex(/^(\+62|62|0)8[1-9][0-9]{6,10}$/, "Nomor HP tidak valid"),
+  contact: z.string("Wajib diisi").min(2, "Wajib diisi").regex(/^(\+62|62|0)8[1-9][0-9]{6,10}$/, "Nomor HP tidak valid"),
   department: z.string("Wajib diisi"),
   role: z.string("Wajib diisi"),
   password: z
@@ -99,42 +99,24 @@ export default function User({userId, user, mode}: props) {
     fetchOptions(getRole, setRoleOptions, "role")
   }, [])
 
-  // useEffect(() => {
-  //   if (!user) return 
-
-  //   if (isUpdate) {
-  //      reset({
-  //       email: user.email,
-  //       name: user.name,
-  //       contact: user.contact,
-  //       department: user.deparment.id,
-  //       role: user.role.id
-  //     })
-  //   }
-  // }, [reset, user])
-  
   const onSubmit = async (values: CreateUserData | UpdateUserData) => {
-    console.log(values)
-    let sendData: UserReq
+    const sendData: UserReq = {
+      ...(isUpdate ? {
+        userId: userId
+      } : {
+        roleId: values.role,
+      }),
+      email: values.email,
+      name: values.name,
+      contact: values.contact,
+      password: values?.password,
+      departmentId: values.department
+    }
+
     try {
       if(isUpdate) {
-        sendData = {
-          userId: userId,
-          email: values.email,
-          contact: values.contact,
-          password: values?.password,
-          departmentId: values.department
-        }
         await updateUser(sendData)
       } else {
-        sendData = {
-          email: values.email,
-          name: values.name,
-          contact: values.contact,
-          password: values.password,
-          roleId: values.role,
-          departmentId: values.department
-        }
         await createUser(sendData)
         reset()
       }
@@ -143,8 +125,6 @@ export default function User({userId, user, mode}: props) {
         title: "Berhasil!",
         message: "Data berhasil disimpan!",
       })
-
-    
     } catch (err: any) {
       showAlert({
         variant: "error",

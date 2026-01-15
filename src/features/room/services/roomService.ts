@@ -15,11 +15,7 @@ export const getLocation = async () => {
     if (!list) {
       return []
     }
-
-    console.log("ini list", list)
     return list
-
-  
   } catch (error: any) {
     console.error("Failed to fetch location list:", error)
     throw new Error(error?.message || "Unknown error occurred while fetching location list")
