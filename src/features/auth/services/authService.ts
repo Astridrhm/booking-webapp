@@ -8,7 +8,7 @@ import { LoginResponse, UserDetail } from '../types/auth'
 export const loginApi = async (email: string, password: string) => {
   try {
     const data = { email, password }
-    const res = await publicApi.post("/login", data)
+    const res = await publicApi.post("/api/login", data)
 
     const response = res.data as ResponseApi<LoginResponse>
     const loginData = response.data
@@ -30,7 +30,7 @@ type RawUserDetail = Omit<UserDetail, 'role'> & {
 
 export const getMe = async (): Promise<UserDetail> => {
   try {
-    const res = await api.get("/auth/detail");
+    const res = await api.get("/api/detail");
     const response = res.data as ResponseApi<RawUserDetail>;
 
     return {
