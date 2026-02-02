@@ -30,7 +30,7 @@ type RawUserDetail = Omit<UserDetail, 'role'> & {
 
 export const getMe = async (): Promise<UserDetail> => {
   try {
-    const res = await api.get("/api/detail");
+    const res = await api.get("/api/auth/detail");
     const response = res.data as ResponseApi<RawUserDetail>;
 
     return {
